@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomor Antrian Klinik</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Nomor Antrian Klinik</h1>
+        <div class="queue-number">{{ queue_number }}</div>
+        <div class="buttons">
+            <a href="{{ url_for('next_queue') }}" class="button" onclick="playAudio()">Next</a>
+            <a href="{{ url_for('reset_queue') }}" class="button">Reset</a>
+        </div>
+    </div>
+    <audio id="queue-audio" src="{{ url_for('static', filename='audio/' + queue_number + '.mp3') }}"></audio>
+    <script>
+        function playAudio() {
+            var queueNumber = document.querySelector('.queue-number').innerText;
+            var audio = document.getElementById('queue-audio');
+            audio.src = "{{ url_for('static', filename='audio/') }}" + queueNumber + ".mp3";
+            audio.play();
+        }
+    </script>
+</body>
+</html>
