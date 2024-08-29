@@ -8,5 +8,5 @@ set SCRIPT_PATH=D:\en.py
 REM Menjalankan skrip Python
 "%PYTHON_PATH%\python.exe" "%SCRIPT_PATH%"
 
-REM Menunggu agar pengguna dapat melihat hasil
-pause
+REM Menutup jendela Command Prompt secara otomatis setelah selesai
+exit
