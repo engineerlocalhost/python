@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Update Karyawan</h1>
+    <form action="{{ url_for('update', nik=karyawan[0]) }}" method="post">
+        <label for="nama">Nama:</label>
+        <input type="text" id="nama" name="nama" value="{{ karyawan[1] }}" required>
+        
+        <label for="departemen">Departemen:</label>
+        <input type="text" id="departemen" name="departemen" value="{{ karyawan[2] }}" required>
+        
+        <label for="jabatan">Jabatan:</label>
+        <input type="text" id="jabatan" name="jabatan" value="{{ karyawan[3] }}" required>
+        
+        <button type="submit" class="btn btn-primary">Update</button>
+    </form>
+{% endblock %}

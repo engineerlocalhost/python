@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Data Karyawan</h1>
+    <a href="{{ url_for('add') }}" class="btn btn-primary">Tambah Karyawan</a>
+    <table>
+        <thead>
+            <tr>
+                <th>NIK</th>
+                <th>Nama</th>
+                <th>Departemen</th>
+                <th>Jabatan</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for k in karyawan %}
+            <tr>
+                <td>{{ k[0] }}</td>
+                <td>{{ k[1] }}</td>
+                <td>{{ k[2] }}</td>
+                <td>{{ k[3] }}</td>
+                <td>
+                    <a href="{{ url_for('update', nik=k[0]) }}" class="btn btn-warning">Update</a>
+                    <form action="{{ url_for('delete', nik=k[0]) }}" method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

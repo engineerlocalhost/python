@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Tambah Karyawan</h1>
+    <form action="{{ url_for('add') }}" method="post">
+        <label for="nik">NIK:</label>
+        <input type="text" id="nik" name="nik" required>
+        
+        <label for="nama">Nama:</label>
+        <input type="text" id="nama" name="nama" required>
+        
+        <label for="departemen">Departemen:</label>
+        <input type="text" id="departemen" name="departemen" required>
+        
+        <label for="jabatan">Jabatan:</label>
+        <input type="text" id="jabatan" name="jabatan" required>
+        
+        <button type="submit" class="btn btn-primary">Simpan</button>
+    </form>
+{% endblock %}
