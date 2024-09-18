@@ -21,8 +21,8 @@ driver.get('https://www.messenger.com')
 time.sleep(5)
 
 # Masukkan email dan password Facebook Anda
-email = 'dcukay@gmail.com'
-password = 'Sayasaja007'
+email = '#'
+password = '#X'
 
 # Temukan elemen untuk email dan password, lalu masukkan data
 driver.find_element(By.NAME, 'email').send_keys(email)
