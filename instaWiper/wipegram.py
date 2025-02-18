@@ -114,9 +114,9 @@ def deep_direct_eraser(thread_id): #TODO
             api.direct_message_delete(id,m.id)
     return
 
-#def blip():
-#     wget.download('https://i.pinimg.com/736x/69/7a/aa/697aaa89a67342ff6e115bb7f312d988.jpg','./snap.jpg')
-#     api.account_change_picture('snap.jpg')
+def blip():
+     wget.download('https://i.pinimg.com/736x/69/7a/aa/697aaa89a67342ff6e115bb7f312d988.jpg','./snap.jpg')
+     api.account_change_picture('snap.jpg')
 
 def thanos():
     time.sleep(5)
@@ -133,7 +133,7 @@ def thanos():
             else: 
                 print(e)
                 exit(0)
-        #blip()
+        blip()
     elif choice.lower()=='a': 
         try:
             archivia_p()
@@ -145,7 +145,7 @@ def thanos():
             else: 
                 print(e)
                 exit(0)
-        #blip()
+        blip()
     else: exit(0)
 
 def unfollow_all():
