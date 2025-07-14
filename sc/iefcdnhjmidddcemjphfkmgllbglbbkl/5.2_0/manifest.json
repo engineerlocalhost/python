@@ -1,0 +1,20 @@
+{
+   "action": {
+      "default_popup": "popup.html"
+   },
+   "content_scripts": [ {
+      "js": [ "functions.js", "gethtml.js" ],
+      "matches": [ "http://*/*", "https://*/*" ]
+   } ],
+   "description": "Tokopedia.com Data Scraper - Easy Data Extraction Tools of Product, Price, Sales Rank, Review & Bulk Url",
+   "host_permissions": [ "http://*/", "https://*/" ],
+   "icons": {
+      "48": "icon.png"
+   },
+   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiUP1KcEKhQUI8bJyDQnpZ7JHlhFXQ0mV2reZo25Du0yOQpWEXg+GpLKlUZ3KEhaukPOg7oF1JHI/lM40uWjjcLJAgbOgtv82srqnZ/h5guyQEe3LKJjKlDJsVwfdiyr9sdkdhBwmYHyvziqcYbblipUO4Cq04Xt+sy6cyPUQnXlhl52Hj6RhyNzZLyCDjGW6nkdeppf0C9BXXUd5qdAKggsukFHaZ/RppiyOEdYuTlCyJFTwZIaOnPvgq5Ej9Cr89K2beECZhv+xuJPo2KTilLM1JMFlH2Zjsz75CkryXuvptC2B+NqMIGZm69JzeOkSbZloAGkOoXU5RT8eqcx+6wIDAQAB",
+   "manifest_version": 3,
+   "name": "Tokopedia Data Scraper - Product, Sales",
+   "permissions": [ "activeTab", "storage", "scripting" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "5.2"
+}

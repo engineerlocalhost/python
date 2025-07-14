@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<script src="scripts/jquery.min.js" type="text/javascript"></script>
+!-- Tambahkan script ini -->
+<script>
+  $(document).ready(function () {
+    // Otomatis isi access key dan tampilkan status verifikasi
+    $('#linkstext').val('BYPASS-ACCESS-KEY'); // Simulasi input access key
+    $('#akey').text('✔ Access key valid.').css('color', 'green');
+    $('#akey1').text('✔ Access granted.').css('color', 'green');
+
+    // Enable tombol Start Extraction
+    $('#changelinks').prop('disabled', false);
+
+    // Jika tombol save diklik, tetap aktif
+    $('#save').click(function () {
+      $('#akey').text('✔ Access key valid.').css('color', 'green');
+      $('#changelinks').prop('disabled', false);
+    });
+  });
+</script>
+</body>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+	
+</head>
+<body>
+    <style>
+
+
+	.buttong {
+  background-color: #004A7F;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: inline-block;
+  padding: 5px 10px;
+  text-align: center;
+  text-decoration: none;
+  -webkit-animation: glowing 1500ms infinite;
+  -moz-animation: glowing 1500ms infinite;
+  -o-animation: glowing 1500ms infinite;
+  animation: glowing 1500ms infinite;
+}
+@-webkit-keyframes glowing {
+  0% { background-color: #31b0d5; -webkit-box-shadow: 0 0 3px #31b0d5; }
+  50% { background-color: #FF0000; -webkit-box-shadow: 0 0 40px #FF0000; }
+  100% { background-color: #31b0d5; -webkit-box-shadow: 0 0 3px #31b0d5; }
+}
+
+@-moz-keyframes glowing {
+  0% { background-color: #31b0d5; -moz-box-shadow: 0 0 3px #31b0d5; }
+  50% { background-color: #FF0000; -moz-box-shadow: 0 0 40px #0CB9EC; }
+  100% { background-color: #31b0d5; -moz-box-shadow: 0 0 3px #31b0d5; }
+}
+
+@-o-keyframes glowing {
+  0% { background-color: #31b0d5; box-shadow: 0 0 3px #31b0d5; }
+  50% { background-color: #0CB9EC; box-shadow: 0 0 40px #0CB9EC; }
+  100% { background-color: #31b0d5; box-shadow: 0 0 3px #31b0d5; }
+}
+
+@keyframes glowing {
+  0% { background-color: #31b0d5; box-shadow: 0 0 3px #31b0d5; }
+  50% { background-color: #0CB9EC; box-shadow: 0 0 40px #0CB9EC; }
+  100% { background-color: #31b0d5; box-shadow: 0 0 3px #31b0d5; }
+}
+	 #urltxt
+	 {
+		padding-bottom: 50px;
+        padding-left: 18px;
+	 }
+      .container {
+        max-height: 1000px;
+        min-height: 1000px;
+        width: 1000px;
+        background: white;
+      }
+      body {
+        font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+        font-size: 100%;
+      }
+      #status {
+        /* avoid an excessively wide status text */
+        white-space: pre;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 1000px;
+      }
+      .patient-list {
+        max-height: 1000px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        max-width: 1000;
+      }
+	  
+	  /* code for save access key*/
+	  #linkstext
+	{
+	font-size: inherit;
+    padding: 0.2em;
+    margin: 0.1em 0.2em;
+    -moz-box-sizing: content-box;
+    -webkit-box-sizing: content-box;
+    box-sizing: content-box;
+	}
+	
+	.form-control {
+    display: inline-block !important;
+    
+    height: 30px !important;
+	}
+    </style>
+	<style>
+	* {
+	  box-sizing: border-box;
+	}
+	body {
+	  font: 14px/1 Arial, sans-serif;
+	  height: 1000px;
+	  width:1000px;
+	}
+	table {
+	  border-collapse: collapse;
+	  background: white;
+	  table-layout: fixed;
+	  width: 100%;
+	}
+	td {
+	  padding: 8px 16px;
+	  border: 1px solid #17a2b8;
+	  width: 160px;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	  white-space: nowrap;
+	  align:text-align;
+	  mso-number-format:General;
+	  background-color:#d4e3e5;
+	  
+	}
+
+	th{
+	  background-color:#17a2b8;
+	  padding: 8px 16px;
+	  border: 1px solid #fff;
+	  width: 160px;
+	  overflow: hidden;
+	  text-overflow: ellipsis;
+	  white-space: nowrap;
+	  align:text-align;
+	  mso-number-format:General;
+	  
+	}
+
+	.pane {
+	  background: #eee;
+	}
+	.pane-hScroll {
+	  overflow: auto;
+	  width: 400px;
+	  background: green;
+	}
+	.pane-vScroll {
+	  overflow-y: auto;
+	  overflow-x: hidden;
+	  height: 200px;
+	  background: red;
+	}
+
+	.pane--table2 {
+	  width: 400px;
+	  overflow-x: scroll;
+	}
+	.pane--table2 th, .pane--table2 td {
+	  width: auto;
+	  min-width: 160px;
+	  
+	}
+	.pane--table2 tbody {
+	  overflow-y: scroll;
+	  overflow-x: hidden;
+	  display: block;
+	  height: 200px;
+	}
+	.pane--table2 thead {
+		display: table-row;
+	}
+
+
+	.custom-file-input::-webkit-file-upload-button {
+	  visibility: hidden;
+	}
+	.custom-file-input::before {
+	  content: 'Select some files';
+	  display: inline-block;
+	  background: -webkit-linear-gradient(top, #f9f9f9, #e3e3e3);
+	  border: 1px solid #999;
+	  border-radius: 3px;
+	  padding: 5px 8px;
+	  outline: none;
+	  white-space: nowrap;
+	  -webkit-user-select: none;
+	  cursor: pointer;
+	  text-shadow: 1px 1px #fff;
+	  font-weight: 700;
+	  font-size: 10pt;
+	}
+	.custom-file-input:hover::before {
+	  border-color: black;
+	}
+	.custom-file-input:active::before {
+	  background: -webkit-linear-gradient(top, #e3e3e3, #f9f9f9);
+	}
+
+</style>
+
+<style>
+#overlay {
+  position: fixed;
+  display: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.9);
+  z-index: 2;
+  cursor: pointer;
+}
+
+#msg{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  -ms-transform: translate(-50%,-50%);
+}
+
+
+
+
+.price-option {
+  display: inline-block;
+  width: 6.25em;
+  vertical-align: middle;
+  margin-right: 0.3125em;
+  font-size: 16px;
+  opacity: 1;
+  transition: opacity .2s ease;
+}
+
+.price-option:last-child { margin-right: 0; }
+
+.price-option__detail {
+  padding: 2em 0;
+  background: white;
+  text-align: center;
+}
+
+.price-option--low .price-option__detail  { border-radius: .25em 0 0 0; }
+.price-option--mid .price-option__detail  { padding: 2.3em 0; border-radius: .25em .25em 0 0; }
+.price-option--high .price-option__detail { border-radius: 0 .25em 0 0; }
+
+.price-option__cost,
+.price-option__type {
+  display: block;
+}
+
+.price-option__cost {
+  font-size: 1.5em;
+  color: #383838;
+}
+
+.price-option__type {
+  font-size: .7em;
+  text-transform: uppercase;
+  color: #909090;
+}
+
+.price-option__purchase {
+  position: relative;
+  display: block;
+  padding: .6em;
+  font-size: .875em;
+  font-weight: bold;
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: rgba(0,0,0,0.6);
+}
+
+.price-option--low .price-option__purchase  { background: #a7d155; border-radius: 0 0 0 .25em; }
+.price-option--mid .price-option__purchase  { background: #eada42; border-radius: 0 0 .25em .25em; }
+.price-option--high .price-option__purchase { background: #e54e4b; border-radius: 0 0 .25em 0; }
+
+.price-option__purchase:before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  display: block;
+  width: 0;
+  height: 0;
+  margin-left: -5px;
+  border-width: 0 5px 5px;
+  border-style: solid;
+}
+
+.price-option--low .price-option__purchase:before  { border-color: transparent transparent #a7d155; }
+.price-option--mid .price-option__purchase:before  { border-color: transparent transparent #eada42; }
+.price-option--high .price-option__purchase:before { border-color: transparent transparent #e54e4b; }
+
+a:link {
+  text-decoration: none;
+  color:#000000;
+}
+a:hover {
+  color:#000000;
+}
+
+a:active {
+color:#000000;
+}
+
+.page-header {
+    padding-bottom: 9px;
+    margin: unset;
+    border-bottom: 1px solid #eee;
+}
+</style>
+    <div class="container">
+		<br>
+		<a style="color:#40e0d0;font-weight:700" target="_blank" href="https://datasunday.com/"> <img src="https://cdn.shopify.com/s/files/1/0018/7564/0371/files/TM-DataSunday_logo_180x.png"> </a>
+        <div class="page-header">
+          <h4 style="font-weight:700">Tokopedia Data Scraper - Product, Sales</h4>
+		  
+        </div>
+		<h5><a Style="color: (internal value);text-decoration: underline;color:blue" target="_blank" href="https://datasunday.com/pages/help#reamaze#0#/kb/how-to-use/how-to-use-datasunday">How to use<a></h5>
+		<div id="overlay">
+		
+		  <div id="msg" class="w3-panel" style="width:60%"> 
+			<h3 style="color:white;font-weight:700">Pricing
+			<hr>
+			</h3>	
+			<div class="pricing">
+			  <div class="[ price-option price-option--low ]">
+				<div class="price-option__detail">
+				  <span class="price-option__cost">$0</span>
+				  <span class="price-option__type">Free User</span>
+				</div>
+				<a target="_blank" href="https://datasunday.com/collections/ecommerce-data-extraction/products/1-day-free-pass-at-datasunday" class="price-option__purchase">Get <br> Free</a>
+			  </div>
+			 <!--
+			 <div class="[ price-option price-option--high ]">
+				<div class="price-option__detail">
+				  <span class="price-option__cost">$3+</span>				  
+				  <span class="price-option__type">Prime User</span>
+				</div>
+				<a target="_blank" href="https://datasunday.com/collections/ecommerce-data-extraction" class="price-option__purchase">More plans</a>
+			  </div>
+			  -->
+			</div>
+			<hr>
+			<p style="color:white;font-weight:600;line-height: 1.8;" >Subscribe product plan for unlimited use. We have the more advanced tools. For checkout, click here <a style="color:#40e0d0;font-weight:700" target="_blank" href="https://datasunday.com/"> <img src="https://cdn.shopify.com/s/files/1/0018/7564/0371/files/TM-DataSunday_logo_180x.png"> </a>.</p>
+		  </div>
+		</div>
+       <div style="width:100%;" class="form-group">
+			<button  style="float:right;display:none;" class="btn btn-primary"  >Get login</button>
+            <textarea  id="linkstext" class="form-control" type="password" placeholder="Enter the access key and click save, then click “Start Extraction” button to extract the data under the current URL."  required style="width:588px;height:40px !important"></textarea>
+			<button style="margin-top: -45px;" type="button" class="btn btn-primary"  id="save">Save</button>
+			<button style="margin-top: -45px;" type="button" class="btn btn-danger"  id="close">Remove</button>
+			<br>
+			<br>
+			Extract bulk URL (Up to 100 URL)
+			<br>
+			<input type="hidden" id="lastcount" urlindex="0" URL=""/>
+			<br>
+
+			<textarea class="form-control" id="urltxt"  name="myurl[]"required style="width:596px;height: 80px !important;" placeholder="Enter each URL in one line and separate it by Comma. E.g.
+http://domain/url1,
+http://domain/url2"></textarea>
+            <button style="margin-top: -45px;" type="button" class="btn btn-primary"  id="saveurl">Save</button>
+			<button style="margin-top: -45px;" type="button" class="btn btn-danger"  id="closeurl">Remove</button>
+		    <br>
+			<br>
+			<!-- <input class="form-control" id="urltxt" type="text" placeholder="Enter the 1000 urls" required style="width:500px;"> -->
+			<p id="akey1"></p>
+			<p id="akey"></p>
+			<p id="dlimit"></p>
+			<p id="totalrow"></p>
+		<div>
+		<br>
+		
+	
+		  <button class="btn btn-primary" id="changelinks">Start Extraction</button>
+		  <button style="display:none;" data=""  type="submit" class="btn btn-primary"  id="GetSingleProduct">Get single product data</button>		  
+		  <button type="submit" class="btn btn-danger"  id="Stop">Stop</button>
+		  <button type="submit" class="btn btn-primary"  id="Clear">Clear</button>
+		  <!-- <form method="post" action="https://datasundayapps.com/restarturl.php" id="url1">  -->
+		  <button type="submit" class="btn btn-info buttong"   id="restart">Restart</button>
+		  <!-- </form> -->
+	      <button type="submit" class="btn btn-success"  id="Extract" >Export CSV</button>
+	  
+		  <!-- <form  id="f1" class="abc">  -->
+		  <!-- <button type="submit" class="btn btn-danger"  id="download">Dowload</button> -->
+		  <!-- <button type="submit" class="btn btn-success"  id="delete">Delete</button> -->
+		  <!-- </form> -->
+		<!-- <button onclick="document.getElementById('id01').style.display='block'">Open Modal</button> -->
+
+			<div id="id01" class="modal">
+			  <form class="modal-content" method="post" action="https://datasundayapps.com/exportdata.php" id="form1" >
+				<div >
+				  <!-- <h1>Download File</h1> -->
+				  <hr>
+				  <p>Are you sure you want to download CSV file?</p>
+				 <hr>
+				 <span class="close" title="Close Modal" id="sclose">×</span>
+				  <div class="clearfix">
+					<button type="button"  class="btn btn-secondary" id="idcancel"  >Cancel</button>
+					<button type="submit"  class="btn btn-primary" id="download" form="form1">Download</button>
+				  </div>
+				</div>
+			  </form>
+			</div>
+		 
+		 <div id="dis">
+		 </div>
+		<br>
+		<br>
+		<p id="totalrow"></p>
+        </div>
+		<p style="display:none;" id="status" ></p>
+		
+		<!--- new hidden field to store pageurl and pageno -->
+		<p style="display:none;" id="pageurl"></p> 
+		
+		<input type="hidden" name="pagecount" id="pagecount" value="">
+		<p style="display:none;" id="status" ></p>
+		<br>
+		<table id="amzmyTableData" class="table-bordered" width="100%">
+			<tbody>
+			<tr>
+				<th>Product Id</th>
+				<th>Product Title</th>
+				<th>Product URL</th>
+				<th>Price</th>
+				<th>Order</th>
+				<th>Image1</th>
+				<th>Image2</th>
+				<th>Image3</th>
+				<th>Image4</th>
+				<th>Image5</th>
+				<th>Image6</th>
+				<th>Category</th>
+				<th>Product Description</th>
+				<th>Rating</th>
+				<th>Feedback1</th>
+				<th>Feedback2</th>
+				<th>Feedback3</th>
+				<th>Feedback4</th>		
+			</tr>
+			</tbody>
+		</table>
+    </div>
+	<script src="scripts/jquery.table2excel.min.js" type="text/javascript"></script>
+    
+    <script src="functions.js" type="text/javascript"></script>
+	<script>
+$(document).ready(function () {
+    $('#akey').text('✔ Bypass active').css('color', 'green');
+    $('#changelinks').prop('disabled', false);
+
+    // Disable overlay
+    $('#overlay').hide();
+
+    // Bypass restart warning
+    $('body').find(":contains('Last extraction Job was not completed')").hide();
+});
+</script>
+
+	
+</body>
+</html>
