@@ -1,29 +1,57 @@
 import sys, os, shutil
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QFileDialog,
-    QPushButton, QHBoxLayout, QWidget
-)
-from PyQt6.QtGui import QPixmap, QImage, QKeySequence
-from PyQt6.QtCore import Qt
 import rawpy
 
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QPushButton,
+    QHBoxLayout, QVBoxLayout, QWidget,
+    QTreeView, QSplitter
+)
+from PyQt6.QtGui import (
+    QPixmap, QImage, QKeySequence, QFileSystemModel, QShortcut
+)
+from PyQt6.QtCore import Qt
+
 EXT = (".jpg", ".jpeg", ".png", ".cr2", ".nef", ".arw", ".dng")
+
 
 class PhotoSorter(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("SJM Photo Sorter")
-        self.resize(1100, 750)
+        self.resize(1300, 800)
 
         # ===== STATE =====
+        self.source = None
         self.files = []
         self.index = 0
         self.scale = 1.0
         self.counter = 1
         self.undo_stack = []
 
-        # ===== UI =====
-        self.label = QLabel(alignment=Qt.AlignmentFlag.AlignCenter)
+        # ================= LEFT : FILE EXPLORER =================
+        self.model = QFileSystemModel()
+        self.model.setRootPath("")
+
+        self.tree = QTreeView()
+        self.tree.setModel(self.model)
+        self.tree.setHeaderHidden(True)
+
+        # FIX: tampilkan nama folder
+        self.tree.setColumnHidden(1, True)
+        self.tree.setColumnHidden(2, True)
+        self.tree.setColumnHidden(3, True)
+        self.tree.setColumnWidth(0, 260)
+
+        self.tree.setRootIndex(
+            self.model.index(os.path.expanduser("~"))
+        )
+        self.tree.clicked.connect(self.on_folder_selected)
+
+        # ================= RIGHT : PREVIEW =================
+        self.label = QLabel("Pilih folder di kiri")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setStyleSheet("background:#111; color:#ccc;")
+        self.label.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self.btn_ok = QPushButton("OK (Space)")
         self.btn_next = QPushButton("Next (→)")
@@ -32,65 +60,67 @@ class PhotoSorter(QMainWindow):
         self.btn_next.clicked.connect(self.next_img)
 
         btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
         btn_layout.addWidget(self.btn_ok)
         btn_layout.addWidget(self.btn_next)
+        btn_layout.addStretch()
 
-        main_layout = QHBoxLayout()
-        main_layout.addWidget(self.label)
+        right_layout = QVBoxLayout()
+        right_layout.addWidget(self.label, stretch=1)
+        right_layout.addLayout(btn_layout)
 
-        container = QWidget()
-        container.setLayout(main_layout)
+        right_widget = QWidget()
+        right_widget.setLayout(right_layout)
 
-        wrapper = QHBoxLayout()
-        wrapper.addLayout(main_layout)
+        # ================= SPLITTER =================
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter.addWidget(self.tree)
+        splitter.addWidget(right_widget)
+        splitter.setSizes([320, 980])
 
-        bottom = QHBoxLayout()
-        bottom.addLayout(btn_layout)
-
-        layout = QHBoxLayout()
-        layout.addWidget(self.label)
-
-        central = QWidget()
-        vbox = QHBoxLayout()
-        vbox.addWidget(self.label)
-        central.setLayout(vbox)
-
-        self.setCentralWidget(central)
-
-        # Button bar
-        dock = QWidget(self)
-        dock.setLayout(btn_layout)
-        self.addToolBar(Qt.ToolBarArea.BottomToolBarArea, self._toolbar(dock))
-
-        # Status bar
+        self.setCentralWidget(splitter)
         self.status = self.statusBar()
 
-        self.load_source()
+        # ================= GLOBAL SHORTCUTS =================
+        QShortcut(Qt.Key.Key_Space, self, activated=self.move_ok)
+        QShortcut(Qt.Key.Key_Right, self, activated=self.next_img)
+        QShortcut(Qt.Key.Key_Left, self, activated=self.prev_img)
+        QShortcut(QKeySequence.StandardKey.Undo, self, activated=self.undo)
+        QShortcut(Qt.Key.Key_Plus, self, activated=self.zoom_in)
+        QShortcut(Qt.Key.Key_Equal, self, activated=self.zoom_in)
+        QShortcut(Qt.Key.Key_Minus, self, activated=self.zoom_out)
 
-    def _toolbar(self, widget):
-        from PyQt6.QtWidgets import QToolBar
-        tb = QToolBar()
-        tb.addWidget(widget)
-        return tb
+    # ================= FOLDER SELECT =================
+    def on_folder_selected(self, index):
+        path = self.model.filePath(index)
+        if not os.path.isdir(path):
+            return
 
-    # =============== LOAD SOURCE =================
-    def load_source(self):
-        folder = QFileDialog.getExistingDirectory(self, "Pilih Source Folder")
-        if not folder:
-            sys.exit()
-
-        self.source = folder
-        self.ok_folder = os.path.join(folder, "OK")
+        self.source = path
+        self.ok_folder = os.path.join(path, "OK")
         os.makedirs(self.ok_folder, exist_ok=True)
 
-        self.files = [f for f in os.listdir(folder) if f.lower().endswith(EXT)]
+        self.files = [
+            f for f in os.listdir(path)
+            if f.lower().endswith(EXT)
+        ]
+
+        self.index = 0
+        self.counter = 1
+        self.scale = 1.0
+        self.undo_stack.clear()
+
+        if not self.files:
+            self.label.setText("Tidak ada foto di folder ini")
+            self.label.setPixmap(QPixmap())
+            return
+
+        self.label.setFocus()
         self.show_image()
 
-    # =============== SHOW IMAGE =================
+    # ================= SHOW IMAGE =================
     def show_image(self):
-        if not self.files:
-            self.label.setText("Tidak ada foto")
-            self.status.showMessage("Selesai")
+        if not self.files or not self.source:
             return
 
         filename = self.files[self.index]
@@ -102,14 +132,21 @@ class PhotoSorter(QMainWindow):
             img = QImage(path)
 
         pix = QPixmap.fromImage(img)
+        if pix.isNull():
+            return
+
         pix = pix.scaled(
-            pix.size() * self.scale,
+            self.label.size() * self.scale,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
-        self.label.setPixmap(pix)
 
+        self.label.setPixmap(pix)
         self.update_status()
+
+    def resizeEvent(self, event):
+        self.show_image()
+        super().resizeEvent(event)
 
     def load_raw(self, path):
         with rawpy.imread(path) as raw:
@@ -117,29 +154,45 @@ class PhotoSorter(QMainWindow):
         h, w, ch = rgb.shape
         return QImage(rgb.data, w, h, ch * w, QImage.Format.Format_RGB888)
 
-    # =============== STATUS BAR =================
+    # ================= STATUS =================
     def update_status(self):
-        msg = (
-            f"File: {self.files[self.index]} | "
-            f"Foto: {self.index + 1}/{len(self.files)} | "
-            f"OK: {self.counter - 1}"
+        self.status.showMessage(
+            f"{self.index + 1}/{len(self.files)} | OK: {self.counter - 1}"
         )
-        self.status.showMessage(msg)
 
-    # =============== NAVIGATION =================
+    # ================= NAVIGATION =================
     def next_img(self):
-        if self.index < len(self.files) - 1:
+        if self.files and self.index < len(self.files) - 1:
             self.index += 1
             self.scale = 1.0
             self.show_image()
 
     def prev_img(self):
-        if self.index > 0:
+        if self.files and self.index > 0:
             self.index -= 1
             self.scale = 1.0
             self.show_image()
 
-    # =============== MOVE OK =================
+    # ================= ZOOM =================
+    def zoom_in(self):
+        if not self.files:
+            return
+        self.scale *= 1.2
+        self.show_image()
+
+    def zoom_out(self):
+        if not self.files:
+            return
+        self.scale *= 0.8
+        self.show_image()
+
+    def wheelEvent(self, event):
+        if not self.files:
+            return
+        self.scale *= 1.1 if event.angleDelta().y() > 0 else 0.9
+        self.show_image()
+
+    # ================= MOVE OK =================
     def move_ok(self):
         if not self.files:
             return
@@ -152,8 +205,6 @@ class PhotoSorter(QMainWindow):
         dst = os.path.join(self.ok_folder, new_name)
 
         shutil.move(src, dst)
-
-        # simpan undo
         self.undo_stack.append((dst, src, filename))
         self.counter += 1
 
@@ -163,48 +214,21 @@ class PhotoSorter(QMainWindow):
 
         self.show_image()
 
-    # =============== UNDO =================
+    # ================= UNDO =================
     def undo(self):
         if not self.undo_stack:
             return
 
-        dst, src, original_name = self.undo_stack.pop()
+        dst, src, original = self.undo_stack.pop()
         shutil.move(dst, src)
-
-        self.files.insert(self.index, original_name)
+        self.files.insert(self.index, original)
         self.counter -= 1
         self.show_image()
 
-    # =============== KEYBOARD =================
-    def keyPressEvent(self, event):
-        key = event.key()
 
-        if key == Qt.Key.Key_Space:
-            self.move_ok()
-
-        elif key == Qt.Key.Key_Right:
-            self.next_img()
-
-        elif key == Qt.Key.Key_Left:
-            self.prev_img()
-
-        elif key == Qt.Key.Key_Plus:
-            self.scale *= 1.2
-            self.show_image()
-
-        elif key == Qt.Key.Key_Minus:
-            self.scale *= 0.8
-            self.show_image()
-
-        elif event.matches(QKeySequence.StandardKey.Undo):
-            self.undo()
-
-    def wheelEvent(self, event):
-        self.scale *= 1.1 if event.angleDelta().y() > 0 else 0.9
-        self.show_image()
-
-# =============== RUN =================
-app = QApplication(sys.argv)
-window = PhotoSorter()
-window.show()
-sys.exit(app.exec())
+# ================= RUN =================
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = PhotoSorter()
+    window.show()
+    sys.exit(app.exec())
