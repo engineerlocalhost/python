@@ -1,0 +1,250 @@
+import sys, os, json, shutil
+import rawpy
+import pygame
+
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QLabel, QPushButton,
+    QHBoxLayout, QVBoxLayout, QWidget,
+    QTreeView, QSplitter, QDialog, QMessageBox
+)
+from PyQt6.QtGui import (
+    QPixmap, QImage, QKeySequence, QFileSystemModel, QShortcut
+)
+from PyQt6.QtCore import Qt, QTimer
+
+EXT = (".jpg", ".jpeg", ".png", ".cr2", ".nef", ".arw", ".dng")
+MAP_FILE = "joymap.json"
+
+
+# ================= MAPPING DIALOG =================
+class MappingDialog(QDialog):
+    def __init__(self, joystick, mapping, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Joystick Mapping")
+        self.resize(400, 300)
+
+        self.joy = joystick
+        self.mapping = mapping
+        self.waiting_for = None
+
+        layout = QVBoxLayout(self)
+
+        self.labels = {}
+        for action in ["next", "prev", "ok", "axis_nav", "axis_zoom"]:
+            btn = QPushButton(f"Bind {action.upper()}")
+            lbl = QLabel(self.describe(action))
+            btn.clicked.connect(lambda _, a=action: self.bind(a))
+            layout.addWidget(btn)
+            layout.addWidget(lbl)
+            self.labels[action] = lbl
+
+        save = QPushButton("Save & Close")
+        save.clicked.connect(self.accept)
+        layout.addWidget(save)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.listen)
+        self.timer.start(50)
+
+    def describe(self, action):
+        m = self.mapping.get(action)
+        if not m:
+            return "Not set"
+        return f"{m['type']} {m['id']}"
+
+    def bind(self, action):
+        self.waiting_for = action
+
+    def listen(self):
+        if not self.waiting_for:
+            return
+
+        pygame.event.pump()
+
+        # Button detect
+        for i in range(self.joy.get_numbuttons()):
+            if self.joy.get_button(i):
+                self.mapping[self.waiting_for] = {"type": "button", "id": i}
+                self.labels[self.waiting_for].setText(f"button {i}")
+                self.waiting_for = None
+                return
+
+        # Axis detect
+        for i in range(self.joy.get_numaxes()):
+            if abs(self.joy.get_axis(i)) > 0.7:
+                self.mapping[self.waiting_for] = {"type": "axis", "id": i}
+                self.labels[self.waiting_for].setText(f"axis {i}")
+                self.waiting_for = None
+                return
+
+
+# ================= MAIN APP =================
+class PhotoSorter(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("SJM Photo Sorter")
+        self.resize(1300, 800)
+
+        # ===== STATE =====
+        self.source = None
+        self.files = []
+        self.index = 0
+        self.scale = 1.0
+        self.counter = 1
+        self.undo_stack = []
+
+        # ================= UI =================
+        self.model = QFileSystemModel()
+        self.model.setRootPath("")
+
+        self.tree = QTreeView()
+        self.tree.setModel(self.model)
+        self.tree.setHeaderHidden(True)
+        self.tree.setColumnHidden(1, True)
+        self.tree.setColumnHidden(2, True)
+        self.tree.setColumnHidden(3, True)
+        self.tree.setRootIndex(self.model.index(os.path.expanduser("~")))
+        self.tree.clicked.connect(self.on_folder_selected)
+
+        self.label = QLabel("Pilih folder")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setStyleSheet("background:#111;color:#ccc")
+
+        right = QVBoxLayout()
+        right.addWidget(self.label)
+        btn_map = QPushButton("Joystick Mapping")
+        btn_map.clicked.connect(self.open_mapping)
+        right.addWidget(btn_map)
+
+        rw = QWidget()
+        rw.setLayout(right)
+
+        split = QSplitter(Qt.Orientation.Horizontal)
+        split.addWidget(self.tree)
+        split.addWidget(rw)
+        self.setCentralWidget(split)
+
+        self.status = self.statusBar()
+
+        # ================= JOYSTICK =================
+        pygame.init()
+        pygame.joystick.init()
+        self.joy = None
+
+        if pygame.joystick.get_count() > 0:
+            self.joy = pygame.joystick.Joystick(0)
+            self.joy.init()
+
+        self.mapping = self.load_mapping()
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.read_joystick)
+        self.timer.start(50)
+
+        self.lock = False
+
+    # ================= MAPPING =================
+    def load_mapping(self):
+        if os.path.exists(MAP_FILE):
+            return json.load(open(MAP_FILE))
+        return {
+            "next": {"type": "button", "id": 5},
+            "prev": {"type": "button", "id": 4},
+            "ok": {"type": "button", "id": 1},
+            "axis_nav": {"type": "axis", "id": 0},
+            "axis_zoom": {"type": "axis", "id": 3}
+        }
+
+    def save_mapping(self):
+        json.dump(self.mapping, open(MAP_FILE, "w"), indent=2)
+
+    def open_mapping(self):
+        if not self.joy:
+            QMessageBox.warning(self, "No joystick", "Joystick not detected")
+            return
+        dlg = MappingDialog(self.joy, self.mapping, self)
+        if dlg.exec():
+            self.save_mapping()
+
+    # ================= JOYSTICK =================
+    def read_joystick(self):
+        if not self.joy:
+            return
+
+        pygame.event.pump()
+
+        # Axis navigation
+        nav = self.mapping["axis_nav"]
+        if nav["type"] == "axis":
+            v = self.joy.get_axis(nav["id"])
+            if abs(v) < 0.4:
+                self.lock = False
+            elif not self.lock:
+                self.next_img() if v > 0 else self.prev_img()
+                self.lock = True
+
+        # Axis zoom
+        zoom = self.mapping["axis_zoom"]
+        if zoom["type"] == "axis":
+            v = self.joy.get_axis(zoom["id"])
+            if v > 0.5:
+                self.zoom_out()
+            elif v < -0.5:
+                self.zoom_in()
+
+        # Buttons
+        for key in ["next", "prev", "ok"]:
+            m = self.mapping[key]
+            if m["type"] == "button" and self.joy.get_button(m["id"]):
+                getattr(self, f"{key}_img" if key != "ok" else "move_ok")()
+
+    # ================= CORE =================
+    def on_folder_selected(self, index):
+        path = self.model.filePath(index)
+        if not os.path.isdir(path):
+            return
+        self.source = path
+        self.ok_folder = os.path.join(path, "OK")
+        os.makedirs(self.ok_folder, exist_ok=True)
+        self.files = [f for f in os.listdir(path) if f.lower().endswith(EXT)]
+        self.index = 0
+        self.show_image()
+
+    def show_image(self):
+        if not self.files:
+            return
+        path = os.path.join(self.source, self.files[self.index])
+        img = QImage(path)
+        pix = QPixmap.fromImage(img).scaled(
+            self.label.size(), Qt.AspectRatioMode.KeepAspectRatio
+        )
+        self.label.setPixmap(pix)
+
+    def next_img(self):
+        if self.index < len(self.files) - 1:
+            self.index += 1
+            self.show_image()
+
+    def prev_img(self):
+        if self.index > 0:
+            self.index -= 1
+            self.show_image()
+
+    def zoom_in(self):
+        self.scale *= 1.1
+        self.show_image()
+
+    def zoom_out(self):
+        self.scale *= 0.9
+        self.show_image()
+
+    def move_ok(self):
+        pass   # sama seperti versi sebelumnya
+
+
+# ================= RUN =================
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    win = PhotoSorter()
+    win.show()
+    sys.exit(app.exec())
