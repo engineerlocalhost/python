@@ -12,6 +12,7 @@ ALLOWED_EXT = (".jpg", ".jpeg", ".png", ".webp")
 FINAL_SIZE = (600, 600)
 THUMB_SIZE = (300, 300)
 OUTPUT_FOLDER_NAME = "shopify_img"
+MAX_SOURCE = 5
 
 # ===============================
 # IMAGE UTILITIES
@@ -22,17 +23,16 @@ def crop_to_object(image, padding):
         return image
 
     w, h = image.size
-    left, top, right, bottom = bbox
+    l, t, r, b = bbox
+    pad_x = int((r - l) * padding)
+    pad_y = int((b - t) * padding)
 
-    pad_x = int((right - left) * padding)
-    pad_y = int((bottom - top) * padding)
-
-    left = max(0, left - pad_x)
-    top = max(0, top - pad_y)
-    right = min(w, right + pad_x)
-    bottom = min(h, bottom + pad_y)
-
-    return image.crop((left, top, right, bottom))
+    return image.crop((
+        max(0, l - pad_x),
+        max(0, t - pad_y),
+        min(w, r + pad_x),
+        min(h, b + pad_y)
+    ))
 
 def resize_to_square(image, size, bg_color):
     image.thumbnail(size, Image.LANCZOS)
@@ -50,14 +50,8 @@ def add_shadow(image):
     return Image.alpha_composite(shadow, image)
 
 # ===============================
-# GUI FUNCTIONS
+# FOLDER UTIL
 # ===============================
-def select_input_folder():
-    folder = filedialog.askdirectory()
-    if folder:
-        input_entry.delete(0, tk.END)
-        input_entry.insert(0, folder)
-
 def get_output_folder(input_folder):
     output = os.path.join(input_folder, OUTPUT_FOLDER_NAME)
     thumb = os.path.join(output, "thumbnail")
@@ -65,112 +59,101 @@ def get_output_folder(input_folder):
     os.makedirs(thumb, exist_ok=True)
     return output, thumb
 
-def preview_image():
-    folder = input_entry.get()
-    if not folder:
-        messagebox.showwarning("Warning", "Pilih folder source terlebih dahulu")
-        return
+# ===============================
+# GUI FUNCTIONS
+# ===============================
+def browse_folder(index):
+    folder = filedialog.askdirectory()
+    if folder:
+        source_entries[index].delete(0, tk.END)
+        source_entries[index].insert(0, folder)
 
-    for f in os.listdir(folder):
-        if f.lower().endswith(ALLOWED_EXT):
-            img = Image.open(os.path.join(folder, f)).convert("RGBA")
-            removed = remove(img)
-            cropped = crop_to_object(removed, zoom_slider.get())
-
-            bg = Image.new("RGBA", cropped.size, BG_COLOR + (255,))
-            bg.paste(cropped, mask=cropped)
-
-            final = resize_to_square(
-                add_shadow(bg).convert("RGB"),
-                FINAL_SIZE,
-                BG_COLOR
-            )
-
-            preview = final.resize((260, 260))
-            tk_img = ImageTk.PhotoImage(preview)
-            preview_label.config(image=tk_img)
-            preview_label.image = tk_img
-            break
-
-def process_images():
-    input_folder = input_entry.get()
-    base_code = name_entry.get().strip()
-
-    if not input_folder or not base_code:
-        messagebox.showerror(
-            "Error",
-            "Pilih folder source dan isi Kode Produk (contoh: B00833)"
-        )
-        return
-
-    output_folder, thumb_folder = get_output_folder(input_folder)
+def process_all_sources():
     zoom = zoom_slider.get()
-    counter = 1
-    success = 0
+    total_success = 0
 
-    for filename in os.listdir(input_folder):
-        if filename.lower().endswith(ALLOWED_EXT):
-            try:
-                img = Image.open(os.path.join(input_folder, filename)).convert("RGBA")
-                removed = remove(img)
-                cropped = crop_to_object(removed, zoom)
+    for i in range(MAX_SOURCE):
+        source = source_entries[i].get().strip()
+        code = code_entries[i].get().strip()
 
-                bg = Image.new("RGBA", cropped.size, BG_COLOR + (255,))
-                bg.paste(cropped, mask=cropped)
+        if not source or not code:
+            continue  # skip kosong
 
-                final = resize_to_square(
-                    add_shadow(bg).convert("RGB"),
-                    FINAL_SIZE,
-                    BG_COLOR
-                )
+        output_folder, thumb_folder = get_output_folder(source)
+        counter = 1
 
-                thumb = resize_to_square(final.copy(), THUMB_SIZE, BG_COLOR)
+        for file in os.listdir(source):
+            if file.lower().endswith(ALLOWED_EXT):
+                try:
+                    img = Image.open(os.path.join(source, file)).convert("RGBA")
+                    removed = remove(img)
+                    cropped = crop_to_object(removed, zoom)
 
-                # ===============================
-                # FIXED NAMING FORMAT
-                # ===============================
-                main_name = f"{base_code}_D ({counter})"
-                thumb_name = f"{base_code}_T ({counter})"
+                    bg = Image.new("RGBA", cropped.size, BG_COLOR + (255,))
+                    bg.paste(cropped, mask=cropped)
 
-                final.save(
-                    os.path.join(output_folder, f"{main_name}.jpg"),
-                    quality=95
-                )
-                thumb.save(
-                    os.path.join(thumb_folder, f"{thumb_name}.jpg"),
-                    quality=90
-                )
+                    final = resize_to_square(
+                        add_shadow(bg).convert("RGB"),
+                        FINAL_SIZE,
+                        BG_COLOR
+                    )
 
-                counter += 1
-                success += 1
+                    thumb = resize_to_square(final.copy(), THUMB_SIZE, BG_COLOR)
 
-            except Exception as e:
-                print("Error:", e)
+                    final.save(
+                        os.path.join(output_folder, f"{code}_D ({counter}).jpg"),
+                        quality=95
+                    )
+                    thumb.save(
+                        os.path.join(thumb_folder, f"{code}_T ({counter}).jpg"),
+                        quality=90
+                    )
+
+                    counter += 1
+                    total_success += 1
+
+                except Exception as e:
+                    print("Error:", e)
 
     messagebox.showinfo(
         "Selesai",
-        f"✅ {success} gambar berhasil diproses\n📁 Output: {output_folder}"
+        f"✅ Total {total_success} gambar berhasil diproses"
     )
 
 # ===============================
 # GUI LAYOUT
 # ===============================
 root = tk.Tk()
-root.title("Photo Product Studio Tool")
-root.geometry("720x470")
+root.title("Multi Source Photo Product Studio")
+root.geometry("760x520")
 root.resizable(False, False)
 
-tk.Label(root, text="Folder Source").place(x=20, y=20)
-input_entry = tk.Entry(root, width=55)
-input_entry.place(x=20, y=45)
-tk.Button(root, text="Browse", command=select_input_folder).place(x=470, y=42)
+source_entries = []
+code_entries = []
 
-tk.Label(root, text="Kode Produk").place(x=20, y=80)
-name_entry = tk.Entry(root, width=30)
-name_entry.place(x=20, y=105)
-name_entry.insert(0, "B00833")
+for i in range(MAX_SOURCE):
+    y = 20 + (i * 80)
 
-tk.Label(root, text="Zoom Level").place(x=20, y=145)
+    tk.Label(root, text=f"Source Folder {i+1}").place(x=20, y=y)
+    src = tk.Entry(root, width=50)
+    src.place(x=20, y=y+25)
+    source_entries.append(src)
+
+    tk.Button(
+        root,
+        text="Browse",
+        command=lambda idx=i: browse_folder(idx)
+    ).place(x=420, y=y+22)
+
+    tk.Label(root, text="Kode Produk").place(x=500, y=y)
+    code = tk.Entry(root, width=18)
+    code.place(x=500, y=y+25)
+    code_entries.append(code)
+
+# Default contoh
+code_entries[0].insert(0, "B00833")
+
+tk.Label(root, text="Zoom Level").place(x=20, y=430)
 zoom_slider = tk.Scale(
     root, from_=0.03, to=0.15,
     resolution=0.01,
@@ -178,21 +161,16 @@ zoom_slider = tk.Scale(
     length=300
 )
 zoom_slider.set(0.07)
-zoom_slider.place(x=20, y=165)
-
-tk.Button(root, text="Preview", command=preview_image).place(x=340, y=160)
-
-preview_label = tk.Label(root, bg="#ddd", width=260, height=260)
-preview_label.place(x=430, y=145)
+zoom_slider.place(x=20, y=450)
 
 tk.Button(
     root,
-    text="🚀 PROSES SEMUA GAMBAR",
-    command=process_images,
+    text="🚀 PROSES SEMUA SOURCE",
+    command=process_all_sources,
     bg="#4CAF50",
     fg="white",
     width=30,
     height=2
-).place(x=200, y=410)
+).place(x=380, y=440)
 
 root.mainloop()
