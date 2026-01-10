@@ -1,16 +1,19 @@
-import sys, os, shutil
+import sys
+import os
+import shutil
 import rawpy
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QLabel, QPushButton,
     QHBoxLayout, QVBoxLayout, QWidget,
-    QTreeView, QSplitter
+    QTreeView, QSplitter, QFileDialog
 )
 from PyQt6.QtGui import (
     QPixmap, QImage, QKeySequence, QFileSystemModel, QShortcut
 )
 from PyQt6.QtCore import Qt
 
+# ================= CONFIG =================
 EXT = (".jpg", ".jpeg", ".png", ".cr2", ".nef", ".arw", ".dng")
 
 
@@ -20,8 +23,9 @@ class PhotoSorter(QMainWindow):
         self.setWindowTitle("SJM Photo Sorter")
         self.resize(1300, 800)
 
-        # ===== STATE =====
+        # ================= STATE =================
         self.source = None
+        self.output_folder = None
         self.files = []
         self.index = 0
         self.scale = 1.0
@@ -36,7 +40,6 @@ class PhotoSorter(QMainWindow):
         self.tree.setModel(self.model)
         self.tree.setHeaderHidden(True)
 
-        # FIX: tampilkan nama folder
         self.tree.setColumnHidden(1, True)
         self.tree.setColumnHidden(2, True)
         self.tree.setColumnHidden(3, True)
@@ -53,17 +56,19 @@ class PhotoSorter(QMainWindow):
         self.label.setStyleSheet("background:#111; color:#ccc;")
         self.label.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
+        self.btn_set_output = QPushButton("Set Output Folder")
         self.btn_ok = QPushButton("OK (Space)")
         self.btn_next = QPushButton("Next (→)")
 
+        self.btn_set_output.clicked.connect(self.select_output_folder)
         self.btn_ok.clicked.connect(self.move_ok)
         self.btn_next.clicked.connect(self.next_img)
 
         btn_layout = QHBoxLayout()
+        btn_layout.addWidget(self.btn_set_output)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_ok)
         btn_layout.addWidget(self.btn_next)
-        btn_layout.addStretch()
 
         right_layout = QVBoxLayout()
         right_layout.addWidget(self.label, stretch=1)
@@ -81,7 +86,7 @@ class PhotoSorter(QMainWindow):
         self.setCentralWidget(splitter)
         self.status = self.statusBar()
 
-        # ================= GLOBAL SHORTCUTS =================
+        # ================= SHORTCUTS =================
         QShortcut(Qt.Key.Key_Space, self, activated=self.move_ok)
         QShortcut(Qt.Key.Key_Right, self, activated=self.next_img)
         QShortcut(Qt.Key.Key_Left, self, activated=self.prev_img)
@@ -90,16 +95,13 @@ class PhotoSorter(QMainWindow):
         QShortcut(Qt.Key.Key_Equal, self, activated=self.zoom_in)
         QShortcut(Qt.Key.Key_Minus, self, activated=self.zoom_out)
 
-    # ================= FOLDER SELECT =================
+    # ================= SELECT SOURCE =================
     def on_folder_selected(self, index):
         path = self.model.filePath(index)
         if not os.path.isdir(path):
             return
 
         self.source = path
-        self.ok_folder = os.path.join(path, "OK")
-        os.makedirs(self.ok_folder, exist_ok=True)
-
         self.files = [
             f for f in os.listdir(path)
             if f.lower().endswith(EXT)
@@ -117,6 +119,18 @@ class PhotoSorter(QMainWindow):
 
         self.label.setFocus()
         self.show_image()
+        self.update_status()
+
+    # ================= SELECT OUTPUT =================
+    def select_output_folder(self):
+        folder = QFileDialog.getExistingDirectory(
+            self, "Pilih Folder Output"
+        )
+        if folder:
+            self.output_folder = folder
+            self.counter = 1
+            self.undo_stack.clear()
+            self.update_status()
 
     # ================= SHOW IMAGE =================
     def show_image(self):
@@ -156,8 +170,9 @@ class PhotoSorter(QMainWindow):
 
     # ================= STATUS =================
     def update_status(self):
+        output = self.output_folder if self.output_folder else "Belum dipilih"
         self.status.showMessage(
-            f"{self.index + 1}/{len(self.files)} | OK: {self.counter - 1}"
+            f"{self.index + 1}/{len(self.files)} | OK: {self.counter - 1} | Output: {output}"
         )
 
     # ================= NAVIGATION =================
@@ -194,7 +209,8 @@ class PhotoSorter(QMainWindow):
 
     # ================= MOVE OK =================
     def move_ok(self):
-        if not self.files:
+        if not self.files or not self.output_folder:
+            self.status.showMessage("Pilih folder output terlebih dahulu!")
             return
 
         filename = self.files[self.index]
@@ -202,7 +218,7 @@ class PhotoSorter(QMainWindow):
         ext = os.path.splitext(filename)[1]
 
         new_name = f"sjm-fileok-{self.counter:03d}{ext}"
-        dst = os.path.join(self.ok_folder, new_name)
+        dst = os.path.join(self.output_folder, new_name)
 
         shutil.move(src, dst)
         self.undo_stack.append((dst, src, filename))
