@@ -29,7 +29,7 @@ Lokasi       : Rukan Puri Mutiara Blok BD21, Sunter, Jakarta Utara
 Mohon Saudara/i untuk membawa CV dan portofolio terbaru sebagai bahan pendukung saat interview.
 
 Catatan:
-Mohon untuk mengonfirmasi kehadiran Saudara/i dengan membalas chat ini atau menghubungi kami paling lambat 1 hari sebelum jadwal interview.
+Mohon untuk mengonfirmasi kehadiran Saudara/i dengan membalas chat ini sebelum jadwal interview.
 
 Hormat kami,
 Tim Rekrutmen
