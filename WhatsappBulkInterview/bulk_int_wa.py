@@ -4,8 +4,13 @@ import time
 import re
 import pyautogui
 import pyperclip
+import random
+import os
+from datetime import datetime
 
-file_excel = "/home/captennem0/Documents/DevopsProject/python/WhatsappBulkInterview/kandidat.xlsx"
+file_excel = "/home/captennem0/Documents/DevopsProject/python/WhatsappBulkInterview/kandidat2.xlsx"
+log_file = "log_wa.csv"
+
 df = pd.read_excel(file_excel)
 
 template_pesan = """Yth. Saudara/i {nama},
@@ -18,7 +23,7 @@ Sehubungan dengan proses seleksi yang sedang berlangsung, kami mengundang Saudar
 
 Adapun detail pelaksanaan interview adalah sebagai berikut:
 Hari/Tanggal : Rabu, 21 Januari 2026
-Waktu        : 10.00 WIB
+Waktu        : {jam} WIB
 Lokasi       : Rukan Puri Mutiara Blok BD21, Sunter, Jakarta Utara
 
 Mohon Saudara/i untuk membawa CV dan portofolio terbaru sebagai bahan pendukung saat interview.
@@ -48,19 +53,47 @@ def normalize_number(number):
 
     return num
 
+# Load log jika ada (resume mode)
+sent_numbers = set()
+if os.path.exists(log_file):
+    log_df = pd.read_csv(log_file)
+    sent_numbers = set(log_df[log_df["status"] == "SUKSES"]["no_wa"].astype(str))
+
+def save_log(nama, no_wa, status, error=""):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    row = pd.DataFrame([[nama, no_wa, status, now, error]],
+                       columns=["nama", "no_wa", "status", "waktu", "error"])
+    if os.path.exists(log_file):
+        row.to_csv(log_file, mode="a", header=False, index=False)
+    else:
+        row.to_csv(log_file, index=False)
+
+print("📲 Membuka WhatsApp Web...")
+webbrowser.open("https://web.whatsapp.com")
+time.sleep(25)
 
 for index, row in df.iterrows():
     nama = row["nama_kandidat"]
     posisi = row["posisi"]
+    jam = str(row["jam"]).strip()
     raw_number = row["no_wa"]
 
     no_wa = normalize_number(raw_number)
 
     if no_wa is None:
         print(f"❌ Nomor tidak valid: {nama} ({raw_number})")
+        save_log(nama, raw_number, "GAGAL", "Nomor tidak valid")
         continue
 
-    pesan = template_pesan.format(nama=nama, posisi=posisi)
+    if no_wa in sent_numbers:
+        print(f"⏭️ Skip (sudah terkirim): {nama}")
+        continue
+
+    pesan = template_pesan.format(
+        nama=nama,
+        posisi=posisi,
+        jam=jam
+    )
 
     print(f"📤 Mengirim ke {nama} ({no_wa})...")
 
@@ -68,16 +101,24 @@ for index, row in df.iterrows():
         url = f"https://web.whatsapp.com/send?phone={no_wa.replace('+','')}"
         webbrowser.open(url)
 
-        time.sleep(10)  # tunggu WhatsApp Web buka
+        time.sleep(12)
 
         pyperclip.copy(pesan)
         pyautogui.hotkey("ctrl", "v")
         time.sleep(1)
-        pyautogui.press("enter")  # SEND otomatis
+        pyautogui.press("enter")
 
-        print("✅ Terkirim. Tunggu 3 detik...\n")
-        time.sleep(3)
+        print("✅ Terkirim")
+
+        save_log(nama, no_wa, "SUKSES")
+
+        delay = random.randint(20, 30)
+        print(f"⏳ Delay {delay} detik...\n")
+        time.sleep(delay)
 
     except Exception as e:
         print(f"❌ Gagal kirim ke {nama}: {e}")
+        save_log(nama, no_wa, "GAGAL", str(e))
         continue
+
+print("🎉 Semua pesan selesai diproses.")
