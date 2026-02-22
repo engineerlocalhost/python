@@ -1,0 +1,16 @@
+# ===== CORE IMAGE PROCESSING =====
+opencv-python>=4.9.0
+Pillow>=10.0.0
+numpy>=1.26.0
+
+# ===== RAW CAMERA SUPPORT =====
+rawpy>=0.19.0
+
+# ===== GUI (built-in tkinter usually included) =====
+# tkinter included with python3-full (Linux)
+
+# ===== PERFORMANCE & UTIL =====
+tqdm>=4.66.0
+
+# ===== OPTIONAL (recommended for future AI upgrade) =====
+scikit-image>=0.22.0
