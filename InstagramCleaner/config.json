@@ -1,0 +1,10 @@
+{
+  "username": "engineerlocalhost",
+  "password": "Sayasaja007",
+  "mode": "archive",
+  "older_than_days": 365,
+  "warmup_mode": true,
+  "max_actions_per_run": 10,
+  "min_delay": 20,
+  "max_delay": 60
+}
