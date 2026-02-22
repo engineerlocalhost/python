@@ -8,7 +8,7 @@ import random
 import os
 from datetime import datetime
 
-file_excel = "/home/captennem0/Documents/DevopsProject/python/WhatsappBulkInterview/kandidat2.xlsx"
+file_excel = "/home/captennem0/Documents/DevopsProject/python/WhatsappBulkInterview/kandidat.xlsx"
 log_file = "log_wa.csv"
 
 df = pd.read_excel(file_excel)
