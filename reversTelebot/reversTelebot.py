@@ -6,8 +6,8 @@ import os
 from queue import Queue
 
 # ===== CONFIG =====
-BOT_TOKEN = "7957950976:AAEmOQA_zfEXmEUn_LBDMDBF2Yog9JjoyWg"  # WAJIB GANTI
-CHAT_ID = "8152707019"
+BOT_TOKEN = "7#" # WAJIB GANTI
+CHAT_ID = "#"
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
 
 IMAGE_PATH = "tanos.webp"  # pastikan file ada
